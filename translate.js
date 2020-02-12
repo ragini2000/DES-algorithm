@@ -1,13 +1,17 @@
 $(document).ready(function () {
     class Translate{
         constructor(){
-            this.String=[];
+            this.All_round_Key=[];
         }
         str2hex(string){
             var hex='';
             for(var i=0;i<string.length;i++){
                 hex=hex+string.charCodeAt(i).toString(16).toUpperCase();
             }
+            while(hex.length%16){
+                hex=hex+'0';
+            }
+            console.log(hex);
             return hex;
         }
         hex2bin(string){
@@ -28,7 +32,7 @@ $(document).ready(function () {
                 57,49,41,33,25,17,9,1, 
                 59,51,43,35,27,19,11,3, 
                 61,53,45,37,29,21,13,5, 
-                63,55,47,39,31,23,15,7 ];
+                63,55,47,39,31,23,15,7];
             var str='';
             for(var i=0;i<64;i++){
                 str=str+string[Initial_Permutation[i]-1];
@@ -199,7 +203,7 @@ $(document).ready(function () {
             return st;
         }
         Encrypt(string,key){
-            var txt_64=this.Initial_Permutation(this.hex2bin_("0123456789ABCDEF"));
+            var txt_64=this.Initial_Permutation(this.hex2bin_(this.str2hex(string)));
             var key_56=this.Permuted_Choice1(this.hex2bin_(key));
             var shift_table=[1, 1, 2, 2, 
                 2, 2, 2, 2,  
@@ -213,6 +217,7 @@ $(document).ready(function () {
                 C=this.Left_Circular_Shift(C,shift_table[i]);
                 D=this.Left_Circular_Shift(D,shift_table[i]);
                 var k=this.Purmuted_Choice2(C+D);
+                this.All_round_Key.push(k);
                 var R_prev=R;
                 R=this.Expansion_Block(R);
                 R=this.XOr(R,k);
@@ -225,23 +230,21 @@ $(document).ready(function () {
             return Cipher_text;
         }
         Decrypt(string){
-            var str=string;
-            var newstr="";
-            for(var i=0;i<string.length;i++){
-                var n=str.charCodeAt(i);
-                if((n>=65 && n<=90)){
-                    var res=String.fromCharCode(155-n);
-                    newstr=newstr.concat(res);
-                }
-                else if((n>=97 && n<=122)){
-                    var res=String.fromCharCode(219-n);
-                    newstr=newstr.concat(res);
-                }
-                else{
-                    newstr=newstr.concat(str[i]);
-                }
+            var txt_64=this.Initial_Permutation(this.hex2bin_(string));
+            var L=txt_64.substr(0,32);
+            var R=txt_64.substr(32);
+            for(var i=0;i<16;i++){
+                var k=this.All_round_Key[15-i];
+                var R_prev=R;
+                R=this.Expansion_Block(R);
+                R=this.XOr(R,k);
+                R=this.Substitution_box(R);
+                R=this.Permutation(R);
+                R=this.XOr(R,L);
+                L=R_prev;
             }
-            return newstr;
+            var Plain_text=this.bin2hex(this.final_Permutation(R+L));
+            return Plain_text;
         }
     }
     var translate=new Translate();
