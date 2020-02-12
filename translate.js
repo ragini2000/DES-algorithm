@@ -202,7 +202,8 @@ $(document).ready(function () {
             }
             return st;
         }
-        Encrypt(string,key){
+        Encrypt(string,key,Rounds){
+            this.All_round_Key=[];
             var txt_64=this.Initial_Permutation(this.hex2bin_(this.str2hex(string)));
             var key_56=this.Permuted_Choice1(this.hex2bin_(key));
             var shift_table=[1, 1, 2, 2, 
@@ -213,7 +214,7 @@ $(document).ready(function () {
             var D=key_56.substr(28);
             var L=txt_64.substr(0,32);
             var R=txt_64.substr(32);
-            for(var i=0;i<16;i++){
+            for(var i=0;i<Rounds;i++){
                 C=this.Left_Circular_Shift(C,shift_table[i]);
                 D=this.Left_Circular_Shift(D,shift_table[i]);
                 var k=this.Purmuted_Choice2(C+D);
@@ -229,12 +230,12 @@ $(document).ready(function () {
             var Cipher_text=this.bin2hex(this.final_Permutation(R+L));
             return Cipher_text;
         }
-        Decrypt(string){
+        Decrypt(string,Rounds){
             var txt_64=this.Initial_Permutation(this.hex2bin_(string));
             var L=txt_64.substr(0,32);
             var R=txt_64.substr(32);
-            for(var i=0;i<16;i++){
-                var k=this.All_round_Key[15-i];
+            for(var i=0;i<Rounds;i++){
+                var k=this.All_round_Key[Rounds-i-1];
                 var R_prev=R;
                 R=this.Expansion_Block(R);
                 R=this.XOr(R,k);
@@ -257,12 +258,14 @@ $(document).ready(function () {
     $("#Encrypt").click(function () {
         var Encrypt = $("#Encrypted").val();
         var key=$("#Key").val();
-        var Decrypted = translate.Encrypt(Encrypt,key);
+        var Rounds=$("#Select :selected").val();
+        var Decrypted = translate.Encrypt(Encrypt,key,Rounds);
         $("#Decrypted").val(Decrypted);
     });
     $("#Decrypt").click(function () {
         var Decrypt = $("#Decrypted").val();
-        var Encrypted=translate.Decrypt(Decrypt);
+        var Rounds=$("#Select :selected").val();
+        var Encrypted=translate.Decrypt(Decrypt,Rounds);
         $("#Encrypted").val(Encrypted);
     });
 });
