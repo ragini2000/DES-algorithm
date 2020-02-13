@@ -2,6 +2,8 @@ $(document).ready(function () {
     class Translate{
         constructor(){
             this.All_round_Key=[];
+            this.Combines=[];
+            this.rounds=[];
         }
         str2hex(string,Bit){
             var hex='';
@@ -378,6 +380,7 @@ $(document).ready(function () {
         }
         Encrypt(string,key,Rounds,Bit){
             this.All_round_Key=[];
+            this.Combines=[];
             var txt_Bit=this.Initial_Permutation(this.hex2bin_(this.str2hex(string,Bit)),Bit);
             var key_Bit=this.Permuted_Choice1(this.hex2bin_(key),Bit);
             var shift_table=[1, 1, 2, 2, 
@@ -402,6 +405,7 @@ $(document).ready(function () {
                 R=this.Permutation(R,Bit);
                 R=this.XOr(R,L);
                 L=R_prev;
+                this.Combines.push(L+R);
             }
             var Cipher_text=this.bin2hex(this.final_Permutation(R+L,Bit));
             return Cipher_text;
@@ -434,11 +438,133 @@ $(document).ready(function () {
     });
     $("#Encrypt").click(function () {
         var Encrypt = $("#Encrypted").val();
-        var key=$("#Key").val();
-        var Rounds=$("#Select :selected").val();
-        var Bit=$("#Block :selected").val();
-        var Decrypted = translate.Encrypt(Encrypt,key,Rounds,Bit);
+        var Encryp=Encrypt.split(",");
+        var key = $("#Key").val();
+        var Rounds = $("#Select :selected").val();
+        var Bit = $("#Block :selected").val();
+        var Decrypted = translate.Encrypt(Encryp[0], key, Rounds, Bit);
+        translate.rounds.push(translate.Combines);
+        if(Encryp.length>0){
+            translate.Encrypt(Encryp[1], key, Rounds, Bit);
+            translate.rounds.push(translate.Combines);
+        }
         $("#Decrypted").val(Decrypted);
+        var datap = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var datac = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var data = translate.str2hex(Encryp[0]);
+        if(data.length>16){
+            data=data.substr(0,16);
+        }
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].charCodeAt(0) >= 97) datap[data[i].charCodeAt(0) - 87]++;
+            else datap[data[i].charCodeAt(0) - 48]++;
+        }
+        data = Decrypted;
+        if(data.length>16){
+            data=data.substr(0,16);
+        }
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].charCodeAt(0) >= 97) datac[data[i].charCodeAt(0) - 87]++;
+            else datac[data[i].charCodeAt(0) - 48]++;
+        }
+        for (var i = 0; i < 16; i++) {
+            datac[i] = (datac[i] * 100) / data.length;
+            datap[i] = (datap[i] * 100) / data.length;
+        }
+        var xs=[];
+        var pq=[];
+        for(var i=0;i<Rounds;i++)
+        {
+	        xs.push(i+1);
+	        pq.push(0);
+        } 
+        for(var j=0;j<Rounds;j++)
+	    {
+		    for(var k=0;k<(data.length*4);k++)
+		    {
+			    if(translate.rounds[0][j][k]!=translate.rounds[1][j][k]) pq[j]++;
+		    }
+	    }
+        var Plaintext = {
+            x: xs,
+            y: pq,
+            type: 'scatter'
+        };
+
+        var da = [Plaintext];
+        var layout = {
+            title: "Avalanche effect",
+            xaxis: {
+                title: "Round Number"
+            },
+            yaxis: {
+                title: "No of bit changed"
+            }
+        };
+        Plotly.newPlot('myDiv', da, layout);
+
+        var chart = new CanvasJS.Chart("chartcontainer",
+            {
+                title: {
+                    text: "Round: " + Rounds + ", Block Size: " + Bit
+                },
+                legend: {
+                    cursor: "pointer",
+                    verticalAlign: "bottom",
+                    horizontalAlign: "left",
+                    dockInsidePlotArea: true,
+
+                },
+                data: [
+                    {
+                        type: "line",
+                        showInLegend: true,
+                        name: "plaintext",
+                        dataPoints: [
+                            { y: datap[0] },
+                            { y: datap[1] },
+                            { y: datap[2] },
+                            { y: datap[3] },
+                            { y: datap[4] },
+                            { y: datap[5] },
+                            { y: datap[6] },
+                            { y: datap[7] },
+                            { y: datap[8] },
+                            { y: datap[9] },
+                            { y: datap[10] },
+                            { y: datap[11] },
+                            { y: datap[12] },
+                            { y: datap[13] },
+                            { y: datap[14] },
+                            { y: datap[15] }
+                        ]
+                    },
+                    {
+                        type: "line",
+                        showInLegend: true,
+                        name: "ciphertext",
+                        dataPoints: [
+                            { y: datac[0] },
+                            { y: datac[1] },
+                            { y: datac[2] },
+                            { y: datac[3] },
+                            { y: datac[4] },
+                            { y: datac[5] },
+                            { y: datac[6] },
+                            { y: datac[7] },
+                            { y: datac[8] },
+                            { y: datac[9] },
+                            { y: datac[10] },
+                            { y: datac[11] },
+                            { y: datac[12] },
+                            { y: datac[13] },
+                            { y: datac[14] },
+                            { y: datac[15] }
+                        ]
+                    }
+                ]
+            });
+        chart.render();
     });
     $("#Decrypt").click(function () {
         var Decrypt = $("#Decrypted").val();
