@@ -443,12 +443,12 @@ $(document).ready(function () {
         var Rounds = $("#Select :selected").val();
         var Bit = $("#Block :selected").val();
         var Decrypted = translate.Encrypt(Encryp[0], key, Rounds, Bit);
+        $("#Decrypted").val(Decrypted);
         translate.rounds.push(translate.Combines);
         if(Encryp.length>0){
             translate.Encrypt(Encryp[1], key, Rounds, Bit);
             translate.rounds.push(translate.Combines);
         }
-        $("#Decrypted").val(Decrypted);
         var datap = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         var datac = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         var data = translate.str2hex(Encryp[0]);
