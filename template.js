@@ -1,20 +1,10 @@
 $(document).ready(function () {
-    class Translate{
+    class Template{
         constructor(){
-            this.All_round_Key=[];
-            this.Combines=[];
+            this.Round_keys=[];
+            this.Round_keys_hex=[];
+            this.Round_outputs=[];
             this.rounds=[];
-        }
-        str2hex(string,Bit){//code snippet to convert input string to hexadecimal form
-            var hex='';
-            for(var i=0;i<string.length;i++){
-                hex=hex+string.charCodeAt(i).toString(16).toUpperCase();
-            }
-            while(hex.length%(Bit/4)){
-                hex=hex+'0';
-            }
-            console.log(hex);
-            return hex;
         }
         hex2bin(string){
             return (parseInt(string, 16).toString(2)).padStart(4, '0');/*parseInt converts the hexadecimal to binary 
@@ -27,7 +17,7 @@ $(document).ready(function () {
             })
             return result;// plaintext of 16 hexadecimal form converted to 64 binary text
         }
-        Initial_Permutation(string,Bit){////argument is 64 bits text
+        Initial_Permutation(string,Block_len){////argument is 64 bits text
             var Initial_Permutation=[
                 //for 32 bit block length
                 [18,27,14,5,10,26,16,24,
@@ -65,12 +55,12 @@ $(document).ready(function () {
             ];
             var str='';
             // according to the Initial_Permutation array swapping is done and 64/32/128 bits text is returned
-            if(Bit==64){
+            if(Block_len==64){
                 for(var i=0;i<64;i++){
                     str=str+string[Initial_Permutation[1][i]-1];
                 }
             }
-            else if(Bit==32){
+            else if(Block_len==32){
                 for(var i=0;i<32;i++){
                     str=str+string[Initial_Permutation[0][i]-1];
                 }
@@ -82,7 +72,7 @@ $(document).ready(function () {
             }
             return str;
         }
-        Permuted_Choice1(string,Bit){
+        Permuted_Choice1(string,Block_len){
             var PC_1=[
             //for 64 bits plaintext
             [57,49,41,33,25,17,9, 
@@ -108,12 +98,12 @@ $(document).ready(function () {
         ];
             var str='';
             //according to the Permuted_Choice1 array swapping is done
-            if(Bit==64){
+            if(Block_len==64){
                 for(var i=0;i<56;i++){//8 bits dropped
                     str=str+string[PC_1[0][i]-1];
                 }
             }
-            else if(Bit==32){
+            else if(Block_len==32){
                 for(var i=0;i<28;i++){//4 bits dropped
                     str=str+string[PC_1[1][i]-1];
                 }
@@ -125,7 +115,7 @@ $(document).ready(function () {
             }
             return str;// 56/32/112 bits key is returned after dropping 8/4/16 bits
         }
-        Purmuted_Choice2(string,Bit){//argument string is C+D that is 56/32/112 bits string
+        Permuted_Choice2(string,Block_len){//argument string is C+D that is 56/32/112 bits string
             var PC_2=[
                 //for 64 bits plaintext
                 [14,17,11,24,1,5, 
@@ -147,12 +137,12 @@ $(document).ready(function () {
                 28,48,40,59,44,80,71,101,87,1,41,73,46,30,83,22,26,34,5,103,37,18,24,89,17,47,19,10,25,7,8,2]];
             var str='';
             //according to the Permuted_Choice2 array swapping is done
-            if(Bit==64){
+            if(Block_len==64){
                 for(var i=0;i<48;i++){//8 bits dropped
                     str=str+string[PC_2[0][i]-1];
                 }
             }
-            else if(Bit==32){
+            else if(Block_len==32){
                 for(var i=0;i<24;i++){//4 bits dropped
                     str=str+string[PC_2[1][i]-1];
                 }
@@ -164,7 +154,7 @@ $(document).ready(function () {
             }
             return str;//// 48 /24/96 bits binary string is returned depending on 64/32/128 bit block length
         }
-        Expansion_Block(string,Bit){//// argument string is 32/16/64 bits
+        Expansion_Block(string,Block_len){//// argument string is 32/16/64 bits
             var Expansion=[
                 //contains duplicate 16 bits, for 64 bit block length
                 [32,1,2,3,4,5,4,5, 
@@ -185,12 +175,12 @@ $(document).ready(function () {
             ];
             var str='';
             //according to  Expansion array swapping is done 
-            if(Bit==64){
+            if(Block_len==64){
                 for(var i=0;i<48;i++){
                     str=str+string[Expansion[0][i]-1];
                 }
             }
-            else if(Bit==32){
+            else if(Block_len==32){
                 for(var i=0;i<24;i++){
                     str=str+string[Expansion[1][i]-1];
                 }
@@ -253,7 +243,7 @@ $(document).ready(function () {
                 [11,8,12,7,1,14,2,13,6,15,0,9,10,4,5,3] 
             ], 
             [ 
-                [12,1,10,15,9,2,6,8,0,13,3,4,14,7,5,11], 
+                [12,1,10,15,9,2,6,8,0,13,3,4,14,7,5,11],                                                          
                 [10,15,4,2,7,12,9,5,6,1,13,14,0,11,3,8], 
                 [9,14,15,5,2,8,12,3,7,0,4,10,1,13,11,6], 
                 [4,3,2,12,9,5,15,10,11,14,1,7,6,0,8,13] 
@@ -321,18 +311,18 @@ $(document).ready(function () {
         ]; 
             var i=0;
             var str='';
-            var count=0;
+            var s_b=0;
             while(i<string.length){
                 var Row=parseInt(string[i]+string[i+5],2);// row is given by first and last bit of 6 bits converted to decimal form
                 var Col=parseInt(string.substr(i+1,4),2);// column is given by middle 4 bits of the 6 bits converted to decimal form
-                str=str+(S_box[count][Row][Col].toString(2)).padStart(4,'0');/* output is value in the particular Sbox at given row and 
+                str=str+(S_box[s_b][Row][Col].toString(2)).padStart(4,'0');/* output is value in the particular Sbox at given row and 
                 column converted into 4 bit binary again*/
-                count++;// count determines the number of s_box
+                s_b++;// s_b determines the number of s_box
                 i=i+6;// we take 6 bits of R at a time
             }
             return str;
         }
-        Permutation(string,Bit){// argument is 32/16/64 bits R
+        Permutation(string,Block_len){// argument is 32/16/64 bits R
             var P=[
                 //for 64 bits block length
                 [16,7,20,21, 
@@ -353,12 +343,12 @@ $(document).ready(function () {
             ];
             var str='';
             // swapping done according to P array
-            if(Bit==64){
+            if(Block_len==64){
                 for(var i=0;i<32;i++){
                     str=str+string[P[0][i]-1];
                 }
             }
-            else if(Bit==32){
+            else if(Block_len==32){
                 for(var i=0;i<16;i++){
                     str=str+string[P[1][i]-1];
                 }
@@ -422,14 +412,6 @@ $(document).ready(function () {
             }
             return str;// 64/32/128 bits permuted R+L is returned
         }
-        hex2str(string){//code snippet to convert hexadecimal form to string
-            var hex  = string.toString();
-	        var str = '';
-	        for (var n = 0; n < hex.length; n += 2) {
-		    str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
-            }
-	        return str;
-        }
 
         bin2hex(string){//code snippet to convert binary to hexadecimal form
             var st="";
@@ -441,130 +423,138 @@ $(document).ready(function () {
             }
             return st;
         }
-        Encrypt(string,key,Rounds,Bit){
-            this.All_round_Key=[];//All_round_key array stores the subkeys generated at each round
-            this.Combines=[];//Combines array store output after every round
+        Encrypt(plaintext,key,Rounds,Block_len){
+            this.Round_keys=[];//Round_keys array stores the subkeys generated at each round
+            this.Round_outputs=[];//Round_outputs array store output after every round
             //plaintext converted from hexadecimal to binary and stored in variable txt_Bit after Initial_permutation function call
-            var txt_Bit=this.Initial_Permutation(this.hex2bin_(this.str2hex(string,Bit)),Bit);
+            var txt_Bit=this.Initial_Permutation(this.hex2bin_(plaintext),Block_len);
             //given key is converted to binary and stored in var key_Bit after Permuted_Choice1 function call
-            var key_Bit=this.Permuted_Choice1(this.hex2bin_(key),Bit);
+            var key_Bit=this.Permuted_Choice1(this.hex2bin_(key),Block_len);
             //there is left circular shifts for successive rounds
             var shift_table=[1, 1, 2, 2, 
                 2, 2, 2, 2,  
                 1, 2, 2, 2,  
                 2, 2, 2, 1 ];
-            var kl=key_Bit.length;
-            var tl=txt_Bit.length;
-            var C=key_Bit.substr(0,kl/2);// C contains first half bits of key
-            var D=key_Bit.substr(kl/2);// D contains last half bits of key
-            var L=txt_Bit.substr(0,tl/2);// L contains first half bits of txt_64
-            var R=txt_Bit.substr(tl/2);// R contains last half bits of txt_64
+            var key_len=key_Bit.length;
+            var text_len=txt_Bit.length;
+            var C=key_Bit.substr(0,key_len/2);// C contains first half bits of key
+            var D=key_Bit.substr(key_len/2);// D contains last half bits of key
+            var L=txt_Bit.substr(0,text_len/2);// L contains first half bits of txt_64
+            var R=txt_Bit.substr(text_len/2);// R contains last half bits of txt_64
             for(var i=0;i<Rounds;i++){
                 C=this.Left_Circular_Shift(C,shift_table[i]);//C after i_th left circular shift according to i_th value in the shift_table
                 D=this.Left_Circular_Shift(D,shift_table[i]);//D after i_th left circular shift according to i_th value in the shift_table
-                var k=this.Purmuted_Choice2(C+D,Bit);//k after Permuted_Choice2 on C+D
-                this.All_round_Key.push(k);//the round key of the i_th round is stored in All_round_key array
+                var k=this.Permuted_Choice2(C+D,Block_len);//k after Permuted_Choice2 on C+D
+                this.Round_keys.push(k);//the round key of the i_th round is stored in Round_keys array
+                this.Round_keys_hex.push(this.bin2hex(k));//the round key of the i_th round (in hexadecimal form) is stored in Round_keys_hex array
                 var R_prev=R;//This R is stored in R_prev for L of next round
-                R=this.Expansion_Block(R,Bit);// R undergoes expansion
+                R=this.Expansion_Block(R,Block_len);// R undergoes expansion
                 R=this.XOr(R,k);// R and k is XORed
                 R=this.Substitution_box(R);//R undergoes substitution according to S-boxes
-                R=this.Permutation(R,Bit);// R undergoes Permutation
+                R=this.Permutation(R,Block_len);// R undergoes Permutation
                 R=this.XOr(R,L);// permuted R undergoes Xor with L
                 L=R_prev;// for next round L is R_prev
-                this.Combines.push(L+R);//output after every round is stored in Combines array
+                this.Round_outputs.push(L+R);//output after every round is stored in Combines array
             }
-            var Cipher_text=this.bin2hex(this.final_Permutation(R+L,Bit));/*R+L undergoes final_Permutation and binary to hexadecimal 
+            var Cipher_text=this.bin2hex(this.final_Permutation(R+L,Block_len));/*R+L undergoes final_Permutation and binary to hexadecimal 
             conversion to get final ciphertext output*/
             return Cipher_text;// final ciphertext is returned after encryption
         }
-        Decrypt(string,Rounds,Bit){//argument is the ciphertext, number of rounds, block length
+        Decrypt(ciphertext,Rounds,Block_len){//argument is the ciphertext, number of rounds, block length
             //ciphertext converted from hexadecimal to binary and stored in variable txt_Bit after Initial_permutation function call
-            var txt_Bit=this.Initial_Permutation(this.hex2bin_(string),Bit);
-            //tl stores the length of txt_bit after Initial_Permutation
-            var tl=txt_Bit.length;
-            var L=txt_Bit.substr(0,tl/2);// L contains first half bits of txt_64
-            var R=txt_Bit.substr(tl/2);// R contains last half bits of txt_64
+            var txt_Bit=this.Initial_Permutation(this.hex2bin_(ciphertext),Block_len);
+            //ct_len stores the length of txt_bit after Initial_Permutation
+            var ct_len=txt_Bit.length;
+            var L=txt_Bit.substr(0,ct_len/2);// L contains first half bits of txt
+            var R=txt_Bit.substr(ct_len/2);// R contains last half bits of txt
             for(var i=0;i<Rounds;i++){
-                var k=this.All_round_Key[Rounds-i-1];//k contains the key of i_th round
+                var k=this.Round_keys[Rounds-i-1];//k contains the key of i_th round
                 var R_prev=R;//This R is stored in R_prev for L of next round
-                R=this.Expansion_Block(R,Bit);// R undergoes expansion
+                R=this.Expansion_Block(R,Block_len);// R undergoes expansion
                 R=this.XOr(R,k);// R and k is XORed
                 R=this.Substitution_box(R);//R undergoes substitution according to S-boxes
-                R=this.Permutation(R,Bit);// R undergoes Permutation
+                R=this.Permutation(R,Block_len);// R undergoes Permutation
                 R=this.XOr(R,L);// permuted R undergoes Xor with L
                 L=R_prev;// for next round L is R_prev
             }
-            var Plain_text=this.bin2hex(this.final_Permutation(R+L,Bit));/*R+L undergoes final_Permutation and binary to hexadecimal 
+            var Plain_text=this.bin2hex(this.final_Permutation(R+L,Block_len));/*R+L undergoes final_Permutation and binary to hexadecimal 
             conversion to get final plaintext output*/
-            Plain_text=this.hex2str(Plain_text);//final plaintext is converted from hexadecimal form to string
+           // Plain_text=this.hex2str(Plain_text);//final plaintext is converted from hexadecimal form to string
             return Plain_text;//final plaintext is retured after decryption
         }
     }
-    var translate=new Translate();//translate is an object of Translate class
+    var template=new Template();//translate is an object of Translate class
     $("#p_t1").keydown(function () {//when you click at the plaintext box, 
         $("#c_t1").val("");//ciphertext box becomes NULL
+        $("#rnd_keys").val("");
+        $("#rnd_keys_bin").val("");
     });
     $("#c_t1").keydown(function () {//when you click at ciphertext box, 
         $("#p_t1").val("");//plaintext box becomes NULL
     });
     $("#encrypt1").click(function () {//clicking Encrypt button
-        var Encrypt = $("#p_t1").val();// variable Encrypt stores the value of plaintext entered
-        var Encryp=Encrypt.split(",");//var Encryp stores the two strings separated by commas
+        var plaintext = $("#p_t1").val();// variable plaintext stores the value of plaintext entered
+        var Encryp=plaintext.split(",");//var Encryp stores the two strings separated by commas
         var key = $("#key1").val();// variable key stores the key entered
         var Rounds = $("#Select :selected").val();// variable Rounds stores the number of rounds selected
-        var Bit = $("#Block :selected").val();//variable Bit stores the block length selected
-        var Decrypted = translate.Encrypt(Encryp[0], key, Rounds, Bit);//variable Decrypted stores the final ciphertext
-        $("#c_t1").val(Decrypted);//element with id c_t1 stores resultant ciphertext
-        translate.rounds.push(translate.Combines);//??
+        var Block_len = $("#Block :selected").val();//variable Block_len stores the block length selected
+        var ciphertext = template.Encrypt(Encryp[0], key, Rounds, Block_len);//variable Ciphertext stores the final ciphertext
+        var subkeys1=template.Round_keys.join("\n");//to store the subkeys of each round
+        var subkeys2=template.Round_keys_hex.join("\n");
+        $("#c_t1").val(ciphertext);//element with id c_t1 stores resultant ciphertext
+        $("#rnd_keys").val(subkeys2);//element with id c_t1 stores all subkeys
+        $("#rnd_keys_bin").val(subkeys1);
+        template.rounds.push(template.Round_outputs);//storing the output of every round in Round_outputs array
         if(Encryp.length>0){
-            translate.Encrypt(Encryp[1], key, Rounds, Bit);
-            translate.rounds.push(translate.Combines);
+            template.Encrypt(Encryp[1], key, Rounds, Block_len);//Encrypt the second string
+            template.rounds.push(template.Round_outputs);//storing the output of every round in Round_outputs array
         }
-        var datap = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        var datac = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        var data = translate.str2hex(Encryp[0]);
+        var data_p = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var data_c = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        var data = Encryp[0];
+        //var data = template.str2hex(Encryp[0]);//data stores 1st string in hexadecimal format
         if(data.length>16){
-            data=data.substr(0,16);
+            data=data.substr(0,16);//considering the first 16 bits only for showing avalanche effect
         }
         for (var i = 0; i < data.length; i++) {
-            if (data[i].charCodeAt(0) >= 97) datap[data[i].charCodeAt(0) - 87]++;
-            else datap[data[i].charCodeAt(0) - 48]++;
+            if (data[i].charCodeAt(0) >= 97) data_p[data[i].charCodeAt(0) - 87]++;
+            else data_p[data[i].charCodeAt(0) - 48]++;
         }
-        data = Decrypted;
+        data = ciphertext;//var data store the ciphertext of 1st plaintext string
         if(data.length>16){
-            data=data.substr(0,16);
+            data=data.substr(0,16);//consider 1st 16 bits of ciphertext also
         }
         for (var i = 0; i < data.length; i++) {
-            if (data[i].charCodeAt(0) >= 97) datac[data[i].charCodeAt(0) - 87]++;
-            else datac[data[i].charCodeAt(0) - 48]++;
+            if (data[i].charCodeAt(0) >= 97) data_c[data[i].charCodeAt(0) - 87]++;
+            else data_c[data[i].charCodeAt(0) - 48]++;
         }
         for (var i = 0; i < 16; i++) {
-            datac[i] = (datac[i] * 100) / data.length;
-            datap[i] = (datap[i] * 100) / data.length;
+            data_c[i] = (data_c[i] * 100) / data.length;
+            data_p[i] = (data_p[i] * 100) / data.length;
         }
-        var xs=[];
-        var pq=[];
+        var x_axis=[];
+        var y_axis=[];
         for(var i=0;i<Rounds;i++)
         {
-	        xs.push(i+1);
-	        pq.push(0);
+	        x_axis.push(i+1);
+	        y_axis.push(0);
         } 
         for(var j=0;j<Rounds;j++)
 	    {
 		    for(var k=0;k<(data.length*4);k++)
 		    {
-			    if(translate.rounds[0][j][k]!=translate.rounds[1][j][k]) pq[j]++;
+			    if(template.rounds[0][j][k]!=template.rounds[1][j][k]) y_axis[j]++;
 		    }
 	    }
         var Plaintext = {
-            x: xs,
-            y: pq,
+            x: x_axis,
+            y: y_axis,
             type: 'scatter'
         };
 
         var da = [Plaintext];
         var layout = {
-            title: "Avalanche effect",
+            title: "Avalanche Effect - change in number of bits at each round",
             xaxis: {
                 title: "Round Number"
             },
@@ -572,12 +562,12 @@ $(document).ready(function () {
                 title: "No of bits changed"
             }
         };
-        Plotly.newPlot('myDiv', da, layout);
+        Plotly.newPlot('avalanche', da, layout);
 
-        var chart = new CanvasJS.Chart("chartcontainer",
+        var chart = new CanvasJS.Chart("chart",
             {
                 title: {
-                    text: "Round: " + Rounds + ", Block Size: " + Bit
+                    text: "Round: " + Rounds + ", Block Size: " + Block_len
                 },
                 legend: {
                     cursor: "pointer",
@@ -590,47 +580,47 @@ $(document).ready(function () {
                     {
                         type: "line",
                         showInLegend: true,
-                        name: "plaintext",
+                        name: "plain_text",
                         dataPoints: [
-                            { y: datap[0] },
-                            { y: datap[1] },
-                            { y: datap[2] },
-                            { y: datap[3] },
-                            { y: datap[4] },
-                            { y: datap[5] },
-                            { y: datap[6] },
-                            { y: datap[7] },
-                            { y: datap[8] },
-                            { y: datap[9] },
-                            { y: datap[10] },
-                            { y: datap[11] },
-                            { y: datap[12] },
-                            { y: datap[13] },
-                            { y: datap[14] },
-                            { y: datap[15] }
+                            { y: data_p[0] },
+                            { y: data_p[1] },
+                            { y: data_p[2] },
+                            { y: data_p[3] },
+                            { y: data_p[4] },
+                            { y: data_p[5] },
+                            { y: data_p[6] },
+                            { y: data_p[7] },
+                            { y: data_p[8] },
+                            { y: data_p[9] },
+                            { y: data_p[10] },
+                            { y: data_p[11] },
+                            { y: data_p[12] },
+                            { y: data_p[13] },
+                            { y: data_p[14] },
+                            { y: data_p[15] }
                         ]
                     },
                     {
                         type: "line",
                         showInLegend: true,
-                        name: "ciphertext",
+                        name: "cipher_text",
                         dataPoints: [
-                            { y: datac[0] },
-                            { y: datac[1] },
-                            { y: datac[2] },
-                            { y: datac[3] },
-                            { y: datac[4] },
-                            { y: datac[5] },
-                            { y: datac[6] },
-                            { y: datac[7] },
-                            { y: datac[8] },
-                            { y: datac[9] },
-                            { y: datac[10] },
-                            { y: datac[11] },
-                            { y: datac[12] },
-                            { y: datac[13] },
-                            { y: datac[14] },
-                            { y: datac[15] }
+                            { y: data_c[0] },
+                            { y: data_c[1] },
+                            { y: data_c[2] },
+                            { y: data_c[3] },
+                            { y: data_c[4] },
+                            { y: data_c[5] },
+                            { y: data_c[6] },
+                            { y: data_c[7] },
+                            { y: data_c[8] },
+                            { y: data_c[9] },
+                            { y: data_c[10] },
+                            { y: data_c[11] },
+                            { y: data_c[12] },
+                            { y: data_c[13] },
+                            { y: data_c[14] },
+                            { y: data_c[15] }
                         ]
                     }
                 ]
@@ -638,10 +628,10 @@ $(document).ready(function () {
         chart.render();
     });
     $("#decrypt1").click(function () {//clicking Decrypt button
-        var Decrypt = $("#c_t1").val();//var Decrypt stores the ciphertext value
+        var ciphertext = $("#c_t1").val();//var Decrypt stores the ciphertext value
         var Rounds=$("#Select :selected").val();//// variable Rounds stores the number of rounds selected
-        var Bit=$("#Block :selected").val();//variable Bit stores the block length selected
-        var Encrypted=translate.Decrypt(Decrypt,Rounds,Bit);//variable Encrypted stores the final plaintext
-        $("#p_t1").val(Encrypted);//element with id p_t1 stores resultant plaintext
+        var Block_len=$("#Block :selected").val();//variable Bit stores the block length selected
+        var plaintext=template.Decrypt(ciphertext,Rounds,Block_len);//variable Encrypted stores the final plaintext
+        $("#p_t1").val(plaintext);//element with id p_t1 stores resultant plaintext
     });
 });
