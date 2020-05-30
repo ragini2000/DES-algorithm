@@ -489,6 +489,11 @@ $(document).ready(function () {
         $("#rnd_keys").val("");
         $("#rnd_keys_bin").val("");
     });
+    $("#key1").keydown(function () {//when you click at the plaintext box, 
+        $("#c_t1").val("");//ciphertext box becomes NULL
+        $("#rnd_keys").val("");
+        $("#rnd_keys_bin").val("");
+    });
     $("#c_t1").keydown(function () {//when you click at ciphertext box, 
         $("#p_t1").val("");//plaintext box becomes NULL
     });
@@ -516,30 +521,32 @@ $(document).ready(function () {
         if(data.length>16){
             data=data.substr(0,16);//considering the first 16 bits only for showing avalanche effect
         }
-        for (var i = 0; i < data.length; i++) {
-            if (data[i].charCodeAt(0) >= 97) data_p[data[i].charCodeAt(0) - 87]++;
+        for (var i = 0; i < data.length; i++) {//Taking the Ascii Difference between the intialised datap corresponding to the 
+            if (data[i].charCodeAt(0) >= 97) data_p[data[i].charCodeAt(0) - 87]++;//chosen First 16  hexadecimal and storing it in datap array
             else data_p[data[i].charCodeAt(0) - 48]++;
         }
         data = ciphertext;//var data store the ciphertext of 1st plaintext string
         if(data.length>16){
             data=data.substr(0,16);//consider 1st 16 bits of ciphertext also
         }
-        for (var i = 0; i < data.length; i++) {
+        for (var i = 0; i < data.length; i++) {//Same as above with the Decrypted text value and storing it in the datac
             if (data[i].charCodeAt(0) >= 97) data_c[data[i].charCodeAt(0) - 87]++;
             else data_c[data[i].charCodeAt(0) - 48]++;
         }
-        for (var i = 0; i < 16; i++) {
+        for (var i = 0; i < 16; i++) {//Normalisation of both the array
             data_c[i] = (data_c[i] * 100) / data.length;
             data_p[i] = (data_p[i] * 100) / data.length;
         }
+        //Intilialisting the Two empty array
         var x_axis=[];
         var y_axis=[];
+        //Defining the Size of x_axis and y_axis to be equal to Rounds and putting the value 0 and Round Number Respectively
         for(var i=0;i<Rounds;i++)
         {
 	        x_axis.push(i+1);
 	        y_axis.push(0);
         } 
-        for(var j=0;j<Rounds;j++)
+        for(var j=0;j<Rounds;j++)//Stroing the total difference between the two given plaintext(in bit) at any jth round in the y_axis array
 	    {
 		    for(var k=0;k<(data.length*4);k++)
 		    {
@@ -552,7 +559,7 @@ $(document).ready(function () {
             type: 'scatter'
         };
 
-        var da = [Plaintext];
+        var da = [Plaintext];//Plotting the Value of y-axis array at each round known as Avalanche Graph
         var layout = {
             title: "Avalanche Effect - change in number of bits at each round",
             xaxis: {
@@ -563,7 +570,7 @@ $(document).ready(function () {
             }
         };
         Plotly.newPlot('avalanche', da, layout);
-
+        //Plotting the Value of data_p array and data_c array to observe the difference between the ciphertext and plaintext in first 16 bit
         var chart = new CanvasJS.Chart("chart",
             {
                 title: {
